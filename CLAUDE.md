@@ -49,6 +49,8 @@ Command registration is modular and centralized, not defined inline in the entry
 1. Create `src/commands/<name>.ts` exporting `register<Name>Command(program)` (mirror `hello.ts`).
 2. Import and call it inside `registerCommands` in `src/commands/index.ts`.
 
+For commander.js best practices — options vs. arguments, input coercion and validation with `InvalidArgumentError`, async actions, error handling, help/hooks — use the **`commander-cli`** skill (`.claude/skills/commander-cli/`).
+
 ## Conventions that matter
 
 - **ESM + NodeNext resolution:** relative imports MUST use a `.js` extension even though the source is `.ts` (e.g. `import { registerHelloCommand } from "./hello.js"`). Omitting it fails type check and build. This is required by `moduleResolution: "NodeNext"`.
