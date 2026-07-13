@@ -10,4 +10,4 @@ program
 
 registerCommands(program);
 
-program.parse();
+await program.parseAsync();

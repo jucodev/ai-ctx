@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import { registerAddSkillsCommand } from "./add-skills.js";
 import { registerHelloCommand } from "./hello.js";
 
 /**
@@ -7,4 +8,5 @@ import { registerHelloCommand } from "./hello.js";
  */
 export function registerCommands(program: Command): void {
   registerHelloCommand(program);
+  registerAddSkillsCommand(program);
 }
