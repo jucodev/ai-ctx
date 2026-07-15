@@ -1,8 +1,8 @@
-import { checkbox } from "@inquirer/prompts";
 import type { Command } from "commander";
-import type { SkillEntry } from "../skills/catalog.js";
+import type { SkillCategory, SkillEntry } from "../skills/catalog.js";
 import { isInternal, loadCatalog, skillName } from "../skills/catalog.js";
 import { copyInternalSkill, isInstalled, runExternalSkill } from "../skills/install.js";
+import { reportSummary, requireTty, select } from "../ui.js";
 
 interface Selected {
   name: string;
@@ -14,26 +14,18 @@ export function registerAddSkillsCommand(program: Command): void {
     .command("add-skills")
     .description("Añade skills al proyecto actual")
     .action(async () => {
-      if (!process.stdout.isTTY) {
-        program.error("add-skills necesita un terminal interactivo (TTY).");
-      }
+      requireTty(program, "add-skills");
 
       const catalog = await loadCatalog();
 
-      let types: string[];
-      try {
-        types = await checkbox({
-          message: "Selecciona las categorías de skills a añadir",
-          choices: catalog.map((category) => ({
-            name: `${category.type} — ${category.description}`,
-            value: category.type,
-          })),
-        });
-      } catch (error) {
-        // Ctrl+C o stdin cerrado: salir en silencio, sin stack trace.
-        if (error instanceof Error && error.name === "ExitPromptError") return;
-        throw error;
-      }
+      const types = await select(
+        "Selecciona las categorías de skills a añadir",
+        catalog.map((category) => ({
+          name: `${category.type} — ${category.description}`,
+          value: category.type,
+        })),
+      );
+      if (!types) return;
 
       if (types.length === 0) {
         console.log("No has seleccionado ninguna categoría. No se ha añadido nada.");
@@ -45,10 +37,7 @@ export function registerAddSkillsCommand(program: Command): void {
 }
 
 /** Aplana las categorías elegidas, deduplicando skills que aparezcan en varias. */
-function collectSkills(
-  catalog: Awaited<ReturnType<typeof loadCatalog>>,
-  types: string[],
-): Selected[] {
+function collectSkills(catalog: SkillCategory[], types: string[]): Selected[] {
   const byName = new Map<string, SkillEntry>();
 
   for (const category of catalog) {
@@ -85,11 +74,5 @@ async function installSkills(skills: Selected[]): Promise<void> {
     }
   }
 
-  console.log();
-  if (added.length > 0) console.log(`✓ Añadidas (${added.length}): ${added.join(", ")}`);
-  if (skipped.length > 0) console.log(`• Ya existían (${skipped.length}): ${skipped.join(", ")}`);
-  if (failed.length > 0) {
-    console.log(`✗ Fallidas (${failed.length}): ${failed.join(", ")}`);
-    process.exitCode = 1;
-  }
+  reportSummary({ added, skipped, failed });
 }
