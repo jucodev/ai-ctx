@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import { refreshContext } from "../context/write.js";
 import type { SkillCategory, SkillEntry } from "../skills/catalog.js";
 import { isInternal, loadCatalog, skillName } from "../skills/catalog.js";
 import { copyInternalSkill, isInstalled, runExternalSkill } from "../skills/install.js";
@@ -75,4 +76,7 @@ async function installSkills(skills: Selected[]): Promise<void> {
   }
 
   reportSummary({ added, skipped, failed });
+
+  await refreshContext(cwd);
+  console.log("↻ app-context.md actualizado");
 }

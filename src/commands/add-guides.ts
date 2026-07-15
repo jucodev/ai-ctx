@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import { refreshContext } from "../context/write.js";
 import { loadGuides } from "../guides/catalog.js";
 import { copyGuide, isInstalled } from "../guides/install.js";
 import { reportSummary, requireTty, select } from "../ui.js";
@@ -52,4 +53,7 @@ async function installGuides(files: string[]): Promise<void> {
   }
 
   reportSummary({ added, skipped, failed });
+
+  await refreshContext(cwd);
+  console.log("↻ app-context.md actualizado");
 }
