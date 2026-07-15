@@ -1,0 +1,14 @@
+[
+  {
+    "type": "frontend",
+    "description": "Rules for the Next.js frontend apps (React, TanStack Query, Zod, Zustand)"
+  },
+  {
+    "type": "backend",
+    "description": "Rules for the API: layered architecture, domain/application/infra/presentation"
+  },
+  {
+    "type": "shared",
+    "description": "Rules shared by frontend and backend (language conventions)"
+  }
+]

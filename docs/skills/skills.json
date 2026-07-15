@@ -1,0 +1,135 @@
+[
+  {
+    "type": "common",
+    "description": "Skills that are commonly used across various applications and platforms.",
+    "list": [
+      {
+        "url": "https://www.skills.sh/anthropics/skills/skill-creator",
+        "command": "npx skills add https://github.com/anthropics/skills --skill skill-creator"
+      },
+      {
+        "url": "https://www.skills.sh/vercel-labs/skills/find-skills",
+        "command": "npx skills add https://github.com/vercel-labs/skills --skill find-skills"
+      }
+    ]
+  },
+  {
+    "type": "shared",
+    "description": "Skills that are common to both backend and frontend projects",
+    "list": [
+      {
+        "url": "https://www.skills.sh/wshobson/agents/typescript-advanced-types",
+        "command": "npx skills add https://github.com/wshobson/agents --skill typescript-advanced-types"
+      },
+      {
+        "url": "https://www.skills.sh/better-auth/skills/better-auth-best-practices",
+        "command": "npx skills add https://github.com/better-auth/skills --skill better-auth-best-practices"
+      },
+      {
+        "url": "https://www.skills.sh/better-auth/skills/better-auth-security-best-practices",
+        "command": "npx skills add https://github.com/better-auth/skills --skill better-auth-security-best-practices"
+      },
+      {
+        "url": "https://www.skills.sh/resend/react-email/react-email",
+        "command": "npx skills add https://github.com/resend/react-email --skill react-email"
+      },
+      {
+        "url": "https://www.skills.sh/resend/resend-skills/resend",
+        "command": "npx skills add https://github.com/resend/resend-skills --skill resend"
+      }
+    ]
+  },
+  {
+    "type": "frontend",
+    "description": "Skills for frontend development",
+    "list": [
+      {
+        "url": "https://www.skills.sh/vercel-labs/agent-browser/agent-browser",
+        "command": "npx skills add https://github.com/vercel-labs/agent-browser --skill agent-browser"
+      },
+      {
+        "url": "https://www.skills.sh/vercel-labs/agent-skills/vercel-react-best-practices",
+        "command": "npx skills add https://github.com/vercel-labs/agent-skills --skill vercel-react-best-practices"
+      },
+      {
+        "url": "https://www.skills.sh/vercel-labs/agent-skills/web-design-guidelines",
+        "command": "npx skills add https://github.com/vercel-labs/agent-skills --skill web-design-guidelines"
+      },
+      {
+        "url": "https://www.skills.sh/vercel-labs/agent-skills/vercel-composition-patterns",
+        "command": "npx skills add https://github.com/vercel-labs/agent-skills --skill vercel-composition-patterns"
+      },
+      {
+        "url": "https://www.skills.sh/anthropics/skills/frontend-design",
+        "command": "npx skills add https://github.com/anthropics/skills --skill frontend-design"
+      },
+      { "path": "tanstack-query-best-practices" }
+    ]
+  },
+  {
+    "type": "animations",
+    "description": "Skills for building animations (GSAP)",
+    "list": [
+      {
+        "url": "https://www.skills.sh/greensock/gsap-skills/gsap-core",
+        "command": "npx skills add https://github.com/greensock/gsap-skills --skill gsap-core"
+      },
+      {
+        "url": "https://www.skills.sh/greensock/gsap-skills/gsap-scrolltrigger",
+        "command": "npx skills add https://github.com/greensock/gsap-skills --skill gsap-scrolltrigger"
+      },
+      {
+        "url": "https://www.skills.sh/greensock/gsap-skills/gsap-performance",
+        "command": "npx skills add https://github.com/greensock/gsap-skills --skill gsap-performance"
+      },
+      {
+        "url": "https://www.skills.sh/greensock/gsap-skills/gsap-timeline",
+        "command": "npx skills add https://github.com/greensock/gsap-skills --skill gsap-timeline"
+      },
+      {
+        "url": "https://www.skills.sh/greensock/gsap-skills/gsap-plugins",
+        "command": "npx skills add https://github.com/greensock/gsap-skills --skill gsap-plugins"
+      },
+      {
+        "url": "https://www.skills.sh/greensock/gsap-skills/gsap-utils",
+        "command": "npx skills add https://github.com/greensock/gsap-skills --skill gsap-utils"
+      },
+      {
+        "url": "https://www.skills.sh/greensock/gsap-skills/gsap-react",
+        "command": "npx skills add https://github.com/greensock/gsap-skills --skill gsap-react"
+      }
+    ]
+  },
+  {
+    "type": "marketing",
+    "description": "Skills for marketing, SEO and copywriting",
+    "list": [
+      {
+        "url": "https://www.skills.sh/coreyhaines31/marketingskills/seo-audit",
+        "command": "npx skills add https://github.com/coreyhaines31/marketingskills --skill seo-audit"
+      },
+      {
+        "url": "https://www.skills.sh/coreyhaines31/marketingskills/ai-seo",
+        "command": "npx skills add https://github.com/coreyhaines31/marketingskills --skill ai-seo"
+      },
+      {
+        "url": "https://www.skills.sh/coreyhaines31/marketingskills/copywriting",
+        "command": "npx skills add https://github.com/coreyhaines31/marketingskills --skill copywriting"
+      },
+      {
+        "url": "https://www.skills.sh/coreyhaines31/marketingskills/product-marketing",
+        "command": "npx skills add https://github.com/coreyhaines31/marketingskills --skill product-marketing"
+      }
+    ]
+  },
+  {
+    "type": "video",
+    "description": "Skills for video creation",
+    "list": [
+      {
+        "url": "https://www.skills.sh/remotion-dev/skills/remotion-best-practices",
+        "command": "npx skills add https://github.com/remotion-dev/skills --skill remotion-best-practices"
+      }
+    ]
+  }
+]
