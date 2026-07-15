@@ -1,4 +1,4 @@
-import { checkbox } from "@inquirer/prompts";
+import { checkbox, input } from "@inquirer/prompts";
 import type { Command } from "commander";
 
 export interface Choice<T> {
@@ -10,6 +10,8 @@ export interface Summary {
   added: string[];
   skipped: string[];
   failed: string[];
+  /** Ficheros que ya existían y se han regenerado. */
+  updated?: string[];
 }
 
 export function requireTty(program: Command, commandName: string): void {
@@ -32,9 +34,31 @@ export async function select<T>(
   }
 }
 
-export function reportSummary({ added, skipped, failed }: Summary): void {
+/**
+ * Pide una línea de texto no vacía. Devuelve el valor trimeado, o `undefined` si el usuario aborta
+ * (Ctrl+C / stdin cerrado), sin stack trace.
+ */
+export async function promptText(
+  message: string,
+  opts: { default?: string } = {},
+): Promise<string | undefined> {
+  try {
+    const value = await input({
+      message,
+      default: opts.default,
+      validate: (raw) => raw.trim().length > 0 || "No puede estar vacío.",
+    });
+    return value.trim();
+  } catch (error) {
+    if (error instanceof Error && error.name === "ExitPromptError") return undefined;
+    throw error;
+  }
+}
+
+export function reportSummary({ added, skipped, failed, updated = [] }: Summary): void {
   console.log();
   if (added.length > 0) console.log(`✓ Añadidas (${added.length}): ${added.join(", ")}`);
+  if (updated.length > 0) console.log(`↻ Actualizadas (${updated.length}): ${updated.join(", ")}`);
   if (skipped.length > 0) console.log(`• Ya existían (${skipped.length}): ${skipped.join(", ")}`);
   if (failed.length > 0) {
     console.log(`✗ Fallidas (${failed.length}): ${failed.join(", ")}`);
