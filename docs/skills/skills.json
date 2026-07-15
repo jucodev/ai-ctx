@@ -117,8 +117,8 @@
         "command": "npx skills add https://github.com/coreyhaines31/marketingskills --skill copywriting"
       },
       {
-        "url": "https://www.skills.sh/coreyhaines31/marketingskills/product-marketing-context",
-        "command": "npx skills add https://github.com/coreyhaines31/marketingskills --skill product-marketing-context"
+        "url": "https://www.skills.sh/coreyhaines31/marketingskills/product-marketing",
+        "command": "npx skills add https://github.com/coreyhaines31/marketingskills --skill product-marketing"
       }
     ]
   },
@@ -126,10 +126,6 @@
     "type": "video",
     "description": "Skills for video creation",
     "list": [
-      {
-        "url": "https://www.skills.sh/heygen-com/hyperframes/gsap",
-        "command": "npx skills add https://github.com/heygen-com/hyperframes --skill gsap"
-      },
       {
         "url": "https://www.skills.sh/remotion-dev/skills/remotion-best-practices",
         "command": "npx skills add https://github.com/remotion-dev/skills --skill remotion-best-practices"
