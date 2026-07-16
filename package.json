@@ -1,7 +1,7 @@
 {
-  "name": "ai-ctx",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@jucodev/ai-ctx",
+  "version": "0.0.0-development",
+  "description": "CLI que prepara el contexto de IA de un proyecto: instala skills, guides y rules y genera un índice vivo (docs/app-context.md).",
   "type": "module",
   "bin": {
     "ai-ctx": "dist/index.js"
@@ -12,22 +12,42 @@
   "engines": {
     "node": ">=20"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jucodev/ai-ctx.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
   "scripts": {
     "build": "tsup && node scripts/copy-assets.mjs",
     "dev": "tsup --watch",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
+    "prepare": "husky",
+    "release": "semantic-release",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "jucodev",
   "license": "ISC",
   "dependencies": {
     "@inquirer/prompts": "^8.5.2",
     "commander": "^15.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.9",
+    "@semantic-release/npm": "^13.1.5",
+    "@semantic-release/release-notes-generator": "^14.1.1",
     "@types/node": "^26.1.0",
+    "husky": "^9.1.7",
+    "semantic-release": "^25.0.7",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3"
   }
