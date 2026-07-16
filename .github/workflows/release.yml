@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24 # semantic-release requiere Node >=22.14; el paquete sigue soportando >=20 en runtime
           registry-url: https://npm.pkg.github.com
 
       - run: npm ci
