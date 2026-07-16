@@ -18,6 +18,23 @@ npx @jucodev/ai-ctx <comando>
 npx @jucodev/ai-ctx --help
 ```
 
+### Autenticación (paquete privado)
+
+`@jucodev/ai-ctx` es un **paquete privado** publicado en el **GitHub Packages npm registry**. Aunque el
+repositorio sea público, instalarlo requiere autenticarse con un **Personal Access Token (classic)** de
+GitHub que tenga el scope `read:packages`.
+
+Crea un `.npmrc` (en tu `$HOME` para uso global, o en la raíz del proyecto consumidor) con:
+
+```
+@jucodev:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=<TU_GITHUB_PAT_CON_read:packages>
+```
+
+A partir de ahí `npx @jucodev/ai-ctx <comando>` funciona con normalidad. Sin este `.npmrc` la descarga
+falla con un `401 Unauthorized`, porque los paquetes de GitHub Packages —incluso los públicos— siempre
+exigen autenticación.
+
 Los comandos que instalan cosas (`add-skills`, `add-guides`, `add-rules`) son **interactivos** y
 necesitan un terminal (TTY): abren un selector donde marcas opciones con **Espacio**, te mueves con
 **↑/↓** y confirmas con **Enter**.
