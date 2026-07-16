@@ -30,7 +30,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "Juan Cortes <juancor.dev@gmail.com>",
+  "author": "jucodev",
   "license": "ISC",
   "dependencies": {
     "@inquirer/prompts": "^8.5.2",
