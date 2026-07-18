@@ -56,7 +56,8 @@ export * from './[ComponentName].type'; // only if .type.ts exists
 - Before writing any UI code, search the shadcn registry via the `shadcn` MCP (`mcp__shadcn__search_items_in_registries`, `mcp__shadcn__view_items_in_registries`) to look up the component API, props, and usage examples
 - If a component is not yet installed locally, install it with `npx shadcn@latest add <component>` — it will land in `components/ui/`
 - If a needed component doesn't exist in shadcn, create it in `components/ui/` following the same conventions (variantes con `cva`, helper `cn()`, primitivas de `@base-ui/react` when applicable)
-- Use `cn()` from `@/modules/shared/helpers/styles` for conditional class merging — it is available throughout the project
+- Use `cn()` from `#/shared/helpers/styles` for conditional class merging — it is available throughout the project. Note the alias: `#/*` maps to `modules/*`, `@/*` to the app root
+- The shadcn CLI generates its own `cn()` in `lib/utils.ts` on init. Keep **one** implementation: have `lib/utils.ts` re-export the one in `shared/helpers/styles` (or point the `utils` alias in `components.json` at it), so installed shadcn components and your own code share it
 - Never use inline styles — always Tailwind classes
 
 ### Icon Usage (MANDATORY CHECK)
