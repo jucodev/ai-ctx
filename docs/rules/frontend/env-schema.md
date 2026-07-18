@@ -21,7 +21,20 @@ export const envVariablesSchema = z.object({
   NEXT_PUBLIC_API_URL: z.string().url(),
   // add each new variable here
 });
+
+export type EnvVariables = z.infer<typeof envVariablesSchema>;
+
+// Validated values to consume from code. Keys are listed LITERALLY on purpose: Next.js inlines
+// `process.env.NEXT_PUBLIC_*` by textual replacement at build time, so passing the whole
+// `process.env` object (or a dynamic `process.env[key]`) resolves to undefined in the client bundle.
+export const ENV: EnvVariables = envVariablesSchema.parse({
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+});
 ```
+
+Consume `ENV.X` — typed and validated — never a scattered `process.env.X`. The root layout's
+`envVariablesSchema.parse(process.env)` runs server-side, where the full object *is* available, and
+is what makes a bad deploy fail loudly at boot.
 
 ### Criteria
 

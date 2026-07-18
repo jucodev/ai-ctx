@@ -8,7 +8,15 @@ paths:
 
 ### File Structure
 
-Hooks follow the same directory pattern as components:
+**Simple hook → a single file.** If the whole hook fits legibly in one file, that's where it stays:
+
+```
+modules/[module]/hooks/
+└── use[Name].hook.ts       # Hook implementation, nothing else
+```
+
+**Complex hook → its own directory**, same pattern as components. Split as soon as exported types,
+config constants or pure utilities show up, instead of growing one file:
 
 ```
 modules/[module]/hooks/[HookName]/
@@ -18,6 +26,9 @@ modules/[module]/hooks/[HookName]/
 ├── [HookName].helper.ts    # Pure utility functions (if needed)
 └── index.ts                # Barrel exports
 ```
+
+Start flat and extract when it hurts, not the other way around — a directory holding a single file
+is ceremony with no payoff.
 
 ### File Naming
 
@@ -73,6 +84,8 @@ export function use[Name]() {
 - Module-specific hooks in `modules/[module]/hooks/`
 
 ### Index Exports
+
+Only for hooks that have their own directory — a single-file hook is imported directly:
 
 ```typescript
 export * from './[HookName].hook';

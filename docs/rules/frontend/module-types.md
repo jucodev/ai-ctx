@@ -23,7 +23,7 @@ export interface Product extends Entity {
 }
 ```
 
-**Frontend-only types** (mapped/transformed API responses, view models) are plain interfaces — do NOT extend `Entity`:
+**Frontend-only types** (mapped/transformed API responses, view models) are plain interfaces — do NOT extend `Entity`. These MAY use `Date`, since they are built client-side after parsing:
 
 ```typescript
 export interface ReportRow {
@@ -36,7 +36,8 @@ export interface ReportRow {
 
 ### Entity Rules
 
-- `Entity` from `#/shared/types/entity.type` provides: `id: string`, `createdAt: Date`, `updatedAt: Date`
+- `Entity` from `#/shared/types/entity.type` provides: `id: string`, `createdAt: string`, `updatedAt: string`
+- Timestamps are ISO **strings**, never `Date` — what crosses the wire is JSON, and `JSON.parse` never produces a `Date`. Typing them as `Date` lies to the compiler and guarantees a runtime `.toISOString is not a function`. Convert at the formatting point, not in the type
 - Never duplicate `id`, `createdAt`, `updatedAt` on interfaces that extend `Entity`
 - Use `keyof typeof EnumName` for enum-typed fields (not the enum type itself)
 - Optional fields use `?` suffix
@@ -70,6 +71,8 @@ export enum ProductStatus {
 Partial<Product>;
 
 // For create params (strips Entity fields)
+// Defined in #/shared/types/entity.type as:
+//   export type OnlyProps<T extends Entity> = Omit<T, keyof Entity>;
 import { OnlyProps } from '#/shared/types/entity.type';
 OnlyProps<Product>;
 

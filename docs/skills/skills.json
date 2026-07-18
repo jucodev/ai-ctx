@@ -63,7 +63,8 @@
         "url": "https://www.skills.sh/anthropics/skills/frontend-design",
         "command": "npx skills add https://github.com/anthropics/skills --skill frontend-design"
       },
-      { "path": "tanstack-query-best-practices" }
+      { "path": "tanstack-query-best-practices" },
+      { "path": "nextjs-modular-architecture" }
     ]
   },
   {

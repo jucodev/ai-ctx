@@ -308,60 +308,35 @@ export class HttpError extends Error {
 
 ### `fetcher`
 
-El único sitio del cliente que habla con la red. Todo fallo sale de aquí como `HttpError`:
+El único sitio del cliente que habla con la red. Es **agnóstico**: acepta el `RequestInit` nativo y
+**devuelve la `Response`** —deserializar es cosa de quien llama—. Lo único que se reserva es
+resolver la URL base, mandar credenciales y **normalizar todo fallo a `HttpError`**:
 
 ```ts
-// modules/shared/helpers/fetcher.ts
+// modules/shared/services/fetcher.ts
 import { ENV } from '#/shared/helpers/env.helper';
 import { HttpError } from '#/shared/errors/http-error';
 
-type FetcherOptions = Omit<RequestInit, 'body'> & {
-  body?: unknown;
-  searchParams?: Record<string, string | number | undefined>;
-};
-
-export async function fetcher<T>(path: string, options: FetcherOptions = {}): Promise<T> {
-  const base = path.startsWith('http') ? '' : ENV.NEXT_PUBLIC_API_URL;
-  const url = new URL(`${base}${path}`);
-
-  if (options.searchParams) {
-    Object.entries(options.searchParams).forEach(([key, value]) => {
-      if (value !== undefined) url.searchParams.set(key, String(value));
-    });
-  }
-
-  const isFormData = options.body instanceof FormData;
-
-  const headers = new Headers(options.headers);
-  // FormData fija su propio Content-Type multipart (con boundary) — nunca lo sobreescribas.
-  if (options.body && !isFormData && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
-  }
+export async function fetcher(path: string, options: RequestInit = {}): Promise<Response> {
+  const url = path.startsWith('http') ? path : `${ENV.NEXT_PUBLIC_API_URL}${path}`;
 
   let response: Response;
   try {
-    response = await fetch(url, {
-      ...options,
-      headers,
-      credentials: 'include',
-      body: options.body
-        ? isFormData
-          ? (options.body as FormData)
-          : JSON.stringify(options.body)
-        : undefined,
-    });
+    response = await fetch(url, { ...options, credentials: 'include' });
   } catch (cause) {
     // Fallo de red: no hay respuesta, así que no hay código de error.
     throw new HttpError('Network error', { cause });
   }
 
-  if (response.status === 204) return undefined as T;
-
-  const text = await response.text();
-  const json = text ? (JSON.parse(text) as unknown) : null;
-
   if (!response.ok) {
-    const body = (json ?? {}) as { code?: string; message?: string; name?: string };
+    // Solo consumimos el body en el camino de error; en el de éxito lo lee quien llama.
+    const text = await response.text();
+    const body = (text ? (JSON.parse(text) as unknown) : {}) as {
+      code?: string;
+      message?: string;
+      name?: string;
+    };
+
     throw new HttpError(body.message ?? response.statusText, {
       errorCode: body.code, // "1-001" — siempre presente si respondió la API
       errorName: body.name, // undefined en producción
@@ -369,9 +344,22 @@ export async function fetcher<T>(path: string, options: FetcherOptions = {}): Pr
     });
   }
 
-  return json as T;
+  return response;
 }
 ```
+
+Y así lo consume una función de la capa `api/` de un módulo:
+
+```ts
+// modules/example/api/example.api.ts
+export async function getExampleDetails(id: string): Promise<{ example: Example }> {
+  const res = await fetcher(`${API_ROUTES.EXAMPLES}/${id}`);
+  return res.json() as Promise<{ example: Example }>;
+}
+```
+
+Ni un `try/catch` ni un `if (!res.ok)` en toda la capa `api/`: si el `fetcher` devolvió, la respuesta
+es buena. Un `204` no tiene body, así que quien llama simplemente no invoca `.json()`.
 
 Tres matices que importan:
 
@@ -468,7 +456,7 @@ export function QueryClientProvider({ children }: { children: React.ReactNode })
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 30_000,
+            staleTime: 60_000,
             retry: 1,
             refetchOnWindowFocus: false,
           },
