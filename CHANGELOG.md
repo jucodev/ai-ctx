@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/jucodev/ai-ctx/compare/v1.0.0...v1.1.0) (2026-07-18)
+
+
+### Features
+
+* **skills:** add nextjs-modular-architecture skill and align rules/guides ([b31578c](https://github.com/jucodev/ai-ctx/commit/b31578c450023a48ab1f7317a4d266123cddcc02))
+
 # 1.0.0 (2026-07-16)
 
 

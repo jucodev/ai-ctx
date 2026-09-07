@@ -1,6 +1,6 @@
 {
   "name": "@jucodev/ai-ctx",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "CLI que prepara el contexto de IA de un proyecto: instala skills, guides y rules y genera un índice vivo (docs/app-context.md).",
   "type": "module",
   "bin": {
