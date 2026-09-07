@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/jucodev/ai-ctx/compare/v1.1.0...v1.1.1) (2026-09-07)
+
+
+### Bug Fixes
+
+* **rules:** migrate form rule from shadcn Form to Field primitives ([792d9f9](https://github.com/jucodev/ai-ctx/commit/792d9f9f9d00b261b394e95cc469a68b0d9f69ce))
+
 # [1.1.0](https://github.com/jucodev/ai-ctx/compare/v1.0.0...v1.1.0) (2026-07-18)
 
 
