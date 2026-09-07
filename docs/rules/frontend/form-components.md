@@ -21,21 +21,22 @@ paths:
 
 ### Component Structure
 
-Use the shadcn `form` primitives (`Form`, `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormMessage`) for field layout and error display. If `components/ui/form.tsx` is not yet installed, run `npx shadcn@latest add form` first.
+Use the shadcn `field` primitives (`Field`, `FieldGroup`, `FieldLabel`, `FieldDescription`, `FieldError`, `FieldSet`, `FieldLegend`) for field layout and error display, wired to react-hook-form through `Controller`. If `components/ui/field.tsx` is not yet installed, run `npx shadcn@latest add field` first.
+
+> The old `Form` / `FormField` / `FormItem` / `FormControl` / `FormMessage` primitives from `@/components/ui/form` are gone from current shadcn: `npx shadcn add form` no longer registers anything (it exits without creating files and without an error). `Field` is the replacement — see https://ui.shadcn.com/docs/components/base/field and https://ui.shadcn.com/docs/forms/react-hook-form.
 
 ```typescript
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { formSchema } from './[FormName].schema';
 import type { [FormName]Props, [FormName]SubmitData } from './[FormName].type';
@@ -47,23 +48,22 @@ export function [FormName]({ formId, onSubmit, defaultValues }: [FormName]Props)
   });
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => onSubmit?.(data))} id={formId}>
-        <FormField
+    <form onSubmit={form.handleSubmit((data) => onSubmit?.(data))} id={formId}>
+      <FieldGroup>
+        <Controller
           control={form.control}
           name="fieldName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Field label</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>Field label</FieldLabel>
+              <Input {...field} id={field.name} aria-invalid={fieldState.invalid} />
+              <FieldDescription>Optional helper text</FieldDescription>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
-      </form>
-    </Form>
+      </FieldGroup>
+    </form>
   );
 }
 ```
@@ -91,12 +91,15 @@ export * from './[FormName].component';
 export * from './[FormName].type';
 ```
 
-### FormField Rules
+### Field Rules
 
-- Always use `FormField` with `render` prop — never use `register()` directly with custom components
-- Spread `field` directly on the input inside `FormControl`: `<Input {...field} />`
-- Always wrap fields with `FormItem` → `FormLabel` → `FormControl` → `FormMessage` — this provides label, error display, and accessibility
-- `FormMessage` renders the error message automatically from the field state — no need to pass it manually
+- Always use `Controller` with the `render` prop — never use `register()` directly with custom components
+- Spread `field` directly on the input: `<Input {...field} id={field.name} />`, and give the input an `id` matching `field.name` so `FieldLabel htmlFor` pairs with it
+- Always wrap a field with `Field` → `FieldLabel` → control → `FieldError` — this provides label, error display, and accessibility
+- Mark invalid state on both sides: `data-invalid={fieldState.invalid}` on `Field` and `aria-invalid={fieldState.invalid}` on the control
+- `FieldError` takes the error objects as an array: `errors={[fieldState.error]}`; render it only when the field is invalid
+- Stack fields inside a single `FieldGroup`; use `FieldSet` + `FieldLegend` for a semantic group of related fields (radio groups, checkbox groups, address blocks)
+- `FieldDescription` is for helper text, never for error text
 - Error messages come from the Zod schema — no translation at the component level
 
 ### useForm Rules
@@ -109,7 +112,8 @@ export * from './[FormName].type';
 ### Restrictions
 
 - Never put the Zod schema inside the component file — always in `[FormName].schema.ts`
-- Never use `register()` with custom UI components — always `FormField` with `render`
-- Never use `watch()` for display logic — use `useWatch()` or derive from `FormField`
+- Never import from `@/components/ui/form` — that component no longer exists in shadcn; use `@/components/ui/field`
+- Never use `register()` with custom UI components — always `Controller` with `render`
+- Never use `watch()` for display logic — use `useWatch()` or derive from `Controller`
 - No default exports — named exports only
 - Standalone form components (in `components/`) must use `onSubmit` callback — never call mutations directly inside them; mutations belong in the page or layout that renders the form

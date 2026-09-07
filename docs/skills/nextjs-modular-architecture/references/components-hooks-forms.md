@@ -140,11 +140,11 @@ export interface ProductFormProps {
 ```
 
 ```tsx
-// ✅ ProductForm.component.tsx — primitivas Form de shadcn, resolver de Zod
+// ✅ ProductForm.component.tsx — primitivas Field de shadcn + Controller, resolver de Zod
 'use client';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { formSchema } from './ProductForm.schema';
 import type { ProductFormData, ProductFormProps } from './ProductForm.type';
@@ -156,30 +156,35 @@ export function ProductForm({ formId, onSubmit, defaultValues }: ProductFormProp
   });
 
   return (
-    <Form {...form}>
-      <form id={formId} onSubmit={form.handleSubmit((data) => onSubmit?.(data))}>
-        <FormField
+    <form id={formId} onSubmit={form.handleSubmit((data) => onSubmit?.(data))}>
+      <FieldGroup>
+        <Controller
           control={form.control}
           name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl><Input {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+              <Input {...field} id={field.name} aria-invalid={fieldState.invalid} />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
         />
-      </form>
-    </Form>
+      </FieldGroup>
+    </form>
   );
 }
 ```
 
+> Instálalas con `npx shadcn@latest add field`. Las antiguas primitivas `Form` / `FormField` de
+> `@/components/ui/form` ya no existen en shadcn (`npx shadcn add form` termina sin crear nada y sin
+> error); `Field` es su reemplazo.
+
 **Reglas clave y su porqué:**
 - **El schema fuera del componente** y el tipo derivado con `z.infer`: un solo origen de verdad para
   validación y tipos; no divergen.
-- **`FormField` con `render`**, nunca `register()` con componentes custom: da label, error y
-  accesibilidad de forma consistente. `FormMessage` pinta el error solo.
+- **`Controller` con `render`**, nunca `register()` con componentes custom: da label, error y
+  accesibilidad de forma consistente. `Field` marca el estado inválido (`data-invalid` +
+  `aria-invalid`) y `FieldError` pinta el error a partir de `fieldState.error`.
 - Siempre `defaultValues` con todos los campos: evita el warning uncontrolled→controlled.
 - El formulario reutilizable **expone `onSubmit`** y **no llama a la mutación**: la mutación vive en
   el page/layout que lo renderiza. Así el mismo formulario sirve para crear y editar.
