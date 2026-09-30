@@ -15,8 +15,8 @@ Todo el código de esta guía es copiable tal cual. Los ejemplos usan un módulo
 
 | Pieza                | Qué se usa aquí                                 | ¿Sustituible?                                                                 |
 | -------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------- |
-| Core del backend     | [`@jucodev/backend-core`](#) (`createAppError`) | Sí — §1 explica qué hace la factoría; puedes escribirla a mano                |
-| Framework HTTP       | Cualquiera (Hono, Express, Fastify…)            | Sí — §5 da la variante para un `onError` nativo                               |
+| Core del backend     | [`@jucodev/backend-core`](#) ≥ 2.0 (`AppError`) | Sí — §2 explica qué hace la clase; puedes escribirla a mano                   |
+| Framework HTTP       | El servidor HTTP del core (Hono por debajo)     | Sí — §5 da la variante sin el core, contra el handler nativo del framework    |
 | Cliente HTTP         | `fetch` nativo                                  | Sí — solo importa que el error se deserialice a `HttpError` (§6)              |
 | Estado servidor (UI) | TanStack Query v5                               | Sí — §8 da la variante sin TanStack                                           |
 | Toasts               | `sonner`                                        | Sí — cualquier lib de toasts                                                  |
@@ -36,7 +36,7 @@ Todo el código de esta guía es copiable tal cual. Los ejemplos usan un módulo
 Error de dominio (subclase de AppError)          ← lo defines en tu app
   ↑ también lo lanzan las bases reutilizables,
     vía factorías de error que les pasa la app (§4)
-  → onError global            (serializa a JSON + status HTTP)
+  → servidor HTTP del core    (lo loguea y lo serializa a JSON + status HTTP)
   → fetcher en la app cliente (deserializa a HttpError)
   → capa de UI                (busca el mensaje por código y muestra el toast)
 ```
@@ -45,17 +45,17 @@ La pieza que lo cose todo es el **código de error** (`PREFIX-NNN`). Es lo únic
 
 Ese mensaje sale de un diccionario `Record<string, string>` (`código → texto`). Si el proyecto tiene i18n viene de los locales; si no, de una constante. El resto de la cadena es idéntico en ambos casos (§7).
 
-El reparto con el core es constante: **el paquete aporta el mecanismo, la app aporta la taxonomía**. `createAppError` y el tipo `HttpErrorHandler` son genéricos; no conocen ni un solo código de error tuyo.
+El reparto con el core es constante: **el paquete aporta el mecanismo, la app aporta la taxonomía**. La clase base `AppError` y el manejo de errores del servidor HTTP son genéricos; no conocen ni un solo código de error tuyo.
 
 ---
 
 ## 2. El `AppError` de la app
 
-Este es el cimiento: **existe uno solo por proyecto** y todos los errores de dominio lo extienden. Se construye con `createAppError`, que recibe los prefijos de módulo y la política de exposición de detalles.
+Este es el cimiento: **existe uno solo por proyecto** y todos los errores de dominio lo extienden. Es una subclase del `AppError` del paquete que sobrescribe dos métodos: los prefijos de módulo y la política de exposición de detalles.
 
 ```ts
 // src/shared/domain/types/app-error.type.ts
-import { createAppError } from '@jucodev/backend-core';
+import { AppError as BaseAppError } from '@jucodev/backend-core';
 import { EnvVarsHelper } from '@/shared/domain/helpers/env.helper';
 
 // Un prefijo numérico único por módulo. Ver §2.1.
@@ -69,24 +69,34 @@ export const PREFIX_ERRORS = {
  * AppError configurado de la app: los prefijos numéricos vienen de `PREFIX_ERRORS`,
  * y los detalles internos (`message`/`name`) solo se exponen fuera de producción.
  */
-export class AppError extends createAppError({
-  prefixErrors: PREFIX_ERRORS,
-  exposeInternals: () => EnvVarsHelper.getEnvVars().NODE_ENV !== 'production',
-}) {}
+export class AppError extends BaseAppError {
+  protected prefixErrors() {
+    return PREFIX_ERRORS;
+  }
+
+  protected exposeInternals() {
+    return EnvVarsHelper.getEnvVars().NODE_ENV !== 'production';
+  }
+}
 ```
+
+> ⚠️ **Sobrescríbelos como métodos, nunca como propiedades flecha.** El constructor base llama a `prefixErrors()` antes de que se inicialicen los campos de tu subclase: `prefixErrors = () => PREFIX_ERRORS` compila y deja **todos** los errores como `UNKNOWN_ERROR.*`.
 
 Qué te da la clase resultante:
 
 | Miembro                                             | Para qué sirve                                                             |
 | --------------------------------------------------- | -------------------------------------------------------------------------- |
 | `constructor(code, message, { httpStatus, cause })` | Construye el error. `httpStatus` por defecto: **500**                      |
-| `error.getResponse(request, response)`              | Serializa **este** error a la respuesta HTTP con su status                 |
-| `AppError.getDefaultResponse(request, response)`    | Serializa un error **no controlado**: status 500, código `000`             |
+| `error.getResponse()`                               | Serializa **este** error a la respuesta HTTP con su status                 |
+| `AppError.getDefaultResponse()`                     | Serializa un error **no controlado**: status 500, código `000`             |
+| `AppError.isAppError(value)`                        | Type guard: ¿es un `AppError`? Es lo que usa el servidor para decidir      |
 | `error.name` (derivado)                             | `EXAMPLE_ERROR.NotFoundById` — resuelto solo, **nunca lo escribas a mano** |
+
+Los dos métodos de serialización los llama el servidor HTTP del core (§5); tu código solo construye y lanza.
 
 El `name` se deriva cruzando el prefijo del código contra `PREFIX_ERRORS` y usando `new.target.name` para el resto. Así, el código `1-001` en la clase `NotFoundById` produce `name: "EXAMPLE_ERROR.NotFoundById"`.
 
-> Si no usas el paquete, `createAppError` es replicable: una clase que extiende `Error`, guarda `code` y `httpStatus`, y expone `getResponse()`. Lo único no negociable es el contrato de salida JSON de §5.
+> Si no usas el paquete, `AppError` es replicable: una clase que extiende `Error`, guarda `code` y `httpStatus`, y expone `getResponse()`. Lo único no negociable es el contrato de salida JSON de §5.
 
 ### 2.1. Registrar el prefijo de un módulo
 
@@ -134,15 +144,15 @@ export namespace ExampleError {
 
 **Reglas:**
 
-- Extiende siempre el `AppError` **de la app** (§2), nunca `Error` pelado ni el del paquete.
+- Extiende siempre el `AppError` **de la app** (§2), nunca `Error` pelado ni el del paquete directamente (sin la clase intermedia no hay prefijos y el `name` sale `UNKNOWN_ERROR.*`).
 - Código con formato `PREFIX-NNN`, secuencial, **sin reutilizar números**.
 - El `httpStatus` se fija en el constructor de la clase, no en el handler.
 - Agrupa los errores en un namespace `<Módulo>Error` — no exportes clases sueltas.
-- Nada de excepciones del framework (`HTTPException` de Hono y equivalentes), ni siquiera para 401/403: crea una subclase de `AppError`.
+- Nada de excepciones del framework (`HTTPException` de Hono y equivalentes), ni siquiera para 401/403: crea una subclase de `AppError`. El servidor no las reconoce y las responde como un **500**, sea cual sea el status que llevaran.
 
 ### Lanzarlo
 
-Lánzalo y ya — el `onError` global lo captura:
+Lánzalo y ya — el servidor HTTP lo captura, lo loguea y lo responde:
 
 ```ts
 // src/example/application/example.service.ts
@@ -161,13 +171,13 @@ try {
 }
 ```
 
-Para loguear usa siempre el logger inyectado (`this.logger.error(error, 'mensaje')`), que adjunta el `traceId` del contexto — **nunca `console.log`**.
+**No loguees un error antes de lanzarlo**, ni lo captures solo para loguearlo: el servidor ya hace `logger.error(error)` con todo lo que se lanza, con el `traceId` de la request, y lo verías dos veces. El logger inyectado (`this.logger.error(error, 'mensaje')`) queda para los fallos que **no** vas a relanzar — y **nunca `console.log`**.
 
 ---
 
 ## 4. Errores que nacen dentro de una base reutilizable
 
-Las bases genéricas del core (un `S3Storage`, un cliente de email…) también necesitan lanzar errores — pero **el paquete jamás importa tu `AppError`**. Si lo hiciera dejaría de ser reutilizable: cada proyecto tiene su taxonomía, sus prefijos y su política de exposición.
+Las bases genéricas del core (un `S3Storage`, un cliente de email…) también necesitan lanzar errores — pero **el paquete no conoce tus códigos de error**. Aporta la clase base `AppError`, no la taxonomía: si fijara él los códigos dejaría de ser reutilizable, porque cada proyecto tiene sus prefijos, sus statuses y su política de exposición.
 
 La solución es invertir la dependencia: la base recibe **factorías de error** por constructor y las llama cuando algo falla. La subclase de tu app las rellena con sus propios `AppError`.
 
@@ -209,39 +219,49 @@ export namespace StorageError {
 }
 ```
 
-> ⚠️ **Las factorías son opcionales, y ese es el peligro.** Si no las pasas, la base cae a un `new Error(message)` pelado. Un `Error` plano **no** es tu `AppError`, así que el `onError` lo trata como fallo no controlado: el cliente recibe `{"code":"000"}` con **status 500** en lugar del 404 que esperabas, y ninguna traducción encaja. Cuando subclasees una base del paquete, rellena **siempre** el objeto `errors` completo.
+> ⚠️ **Las factorías son opcionales, y ese es el peligro.** Si no las pasas, la base cae a un `new Error(message)` pelado. Un `Error` plano **no** es un `AppError`, así que el servidor lo trata como fallo no controlado: el cliente recibe `{"code":"000"}` con **status 500** en lugar del 404 que esperabas, y ninguna traducción encaja. Cuando subclasees una base del paquete, rellena **siempre** el objeto `errors` completo.
 
 ---
 
-## 5. El handler global
+## 5. El servidor lo captura todo
 
-Un único punto convierte cualquier excepción en respuesta HTTP. La regla es la misma sea cual sea el framework:
+Un único punto convierte cualquier excepción en respuesta HTTP, y la regla es siempre la misma:
 
-> `AppError` → `error.getResponse(...)`. Cualquier otra cosa → `AppError.getDefaultResponse(...)`.
+> `AppError` → `error.getResponse()`. Cualquier otra cosa → `AppError.getDefaultResponse()`.
 
-Si usas el `HttpServerService` del core, el handler es parte de la config declarativa y trabaja con `Request`/`Response` web estándar — nada de tipos de Hono. Su tipo es `HttpErrorHandler`:
+Si usas el `HttpServerService` del core, **ese punto ya existe y no se configura**: `createApp` no tiene opción `onError`. Por cada cosa que lanza un handler o un middleware, el servidor hace dos cosas:
+
+1. La loguea con `logger.error(error)` a través del `LoggerService` bindeado, dentro del contexto de la request — la línea lleva el `traceId`.
+2. La responde con la regla de arriba.
 
 ```ts
-// src/app.ts
+// src/app.ts — no hay nada de errores que declarar
 return httpServer.createApp({
   // ...basePath, cors, routers, routes
-  onError: (error, request, response) =>
-    error instanceof AppError
-      ? error.getResponse(request, response)
-      : AppError.getDefaultResponse(request, response),
 });
 ```
 
-Así la taxonomía de errores se queda en la app y el servidor HTTP sigue siendo solo framework: si mañana cambias Hono por otra cosa, esta línea no se toca.
+| Qué ocurre                                         | Status          | Body                                        | ¿Se loguea? |
+| -------------------------------------------------- | --------------- | ------------------------------------------- | ----------- |
+| Se lanza una subclase de `AppError`                | su `httpStatus` | `{ code }` (+ detalles fuera de producción) | Sí          |
+| Se lanza cualquier otra cosa (`Error`, un string…) | 500             | `{ "code": "000" }`                         | Sí          |
+| La petición no encaja con ninguna ruta             | 404             | `{ "code": "000" }`                         | No          |
 
-**Variante sin el core** — el mismo criterio contra el `onError` nativo del framework (aquí Hono):
+Tres cosas que se siguen de esto:
+
+- **El servidor necesita el logger.** `HonoHttpServerService` inyecta `LoggerService`: sin ese binding, el contenedor falla al resolver el servidor HTTP.
+- **Un `HTTPException` del framework es «cualquier otra cosa».** Sale como `{ "code": "000" }` con 500, sea cual sea el status que llevara. Por eso §3 exige subclases de `AppError` también para 401/403.
+- **No registres un `app.onError` propio dentro de un router.** Sustituye al del servidor para las rutas de ese router y te quedas sin log y sin formato.
+
+Así la taxonomía de errores se queda en la app y el servidor HTTP sigue siendo solo framework.
+
+**Variante sin el core** — el mismo criterio contra el handler nativo del framework (aquí Hono). Aquí sí lo escribes tú, y el log también es cosa tuya:
 
 ```ts
-app.onError((error, c) => {
-  const isAppError = error instanceof AppError;
-  const status = isAppError ? error.httpStatus : 500;
-  const body = isAppError ? error.toJSON() : { code: '000' };
-  return c.json(body, status);
+app.onError((error) => {
+  logger.error(error);
+
+  return error instanceof AppError ? error.getResponse() : AppError.getDefaultResponse();
 });
 ```
 
@@ -265,7 +285,7 @@ La respuesta JSON varía según `exposeInternals()` (§2), típicamente `NODE_EN
 { "code": "1-001" }
 ```
 
-Los errores no controlados devuelven **status 500** con `{ "code": "000" }` (y `name: "UnknownError"` + `message: "Uncontrolled unexpected error"` fuera de producción).
+Los errores no controlados devuelven **status 500** con `{ "code": "000" }` a secas, en cualquier entorno: no llevan `message` ni `name`, porque no hay nada útil que exponer — el detalle está en el log. Una ruta inexistente devuelve ese mismo body con **status 404**.
 
 > Las respuestas de error **conservan la cabecera `X-Trace-Id`**. Es el puente entre el toast que ve el usuario y la línea de log del servidor: pide al usuario ese id, o loguéalo en el cliente, y encuentras la request exacta.
 
@@ -555,22 +575,22 @@ try {
 
 ## Resumen de responsabilidades
 
-| Capa                                    | Responsabilidad                                                                   |
-| --------------------------------------- | --------------------------------------------------------------------------------- |
-| Core reutilizable (`backend-core`)      | Aporta el **mecanismo**: `createAppError`, `HttpErrorHandler`, factorías de error |
-| `shared/domain/types/app-error.type.ts` | Configura el `AppError` de la app (`prefixErrors`, `exposeInternals`)             |
-| `domain/errors/`                        | Define la clase, el código (`PREFIX-NNN`) y el status HTTP                        |
-| `shared/infra/` (subclases del core)    | Rellena las factorías de error de las bases (`S3Storage`…)                        |
-| `application/` o `presentation/`        | Lanza el error                                                                    |
-| `onError` global                        | Serializa a JSON con el status correcto                                           |
-| `http-error.ts` + `fetcher.ts`          | Deserializan la respuesta y lanzan `HttpError` con `errorCode`                    |
-| `QueryClientProvider`                   | Busca el mensaje por código y muestra el toast                                    |
-| `locales/*.json` **o** `ERROR_MESSAGES` | Diccionario `código → texto` (con i18n o sin él)                                  |
+| Capa                                    | Responsabilidad                                                                                      |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Core reutilizable (`backend-core`)      | Aporta el **mecanismo**: la clase `AppError`, el servidor que loguea y serializa, factorías de error |
+| `shared/domain/types/app-error.type.ts` | Configura el `AppError` de la app (sobrescribe `prefixErrors()`, `exposeInternals()`)                |
+| `domain/errors/`                        | Define la clase, el código (`PREFIX-NNN`) y el status HTTP                                           |
+| `shared/infra/` (subclases del core)    | Rellena las factorías de error de las bases (`S3Storage`…)                                           |
+| `application/` o `presentation/`        | Lanza el error                                                                                       |
+| Servidor HTTP del core                  | Loguea el error y lo serializa a JSON con el status correcto                                         |
+| `http-error.ts` + `fetcher.ts`          | Deserializan la respuesta y lanzan `HttpError` con `errorCode`                                       |
+| `QueryClientProvider`                   | Busca el mensaje por código y muestra el toast                                                       |
+| `locales/*.json` **o** `ERROR_MESSAGES` | Diccionario `código → texto` (con i18n o sin él)                                                     |
 
 ## Checklist: montar el manejo de errores en un proyecto nuevo
 
-- [ ] `shared/domain/types/app-error.type.ts` con `createAppError({ prefixErrors, exposeInternals })` (§2).
-- [ ] `onError` global enganchado, con la regla `AppError` → `getResponse` / resto → `getDefaultResponse` (§5).
+- [ ] `shared/domain/types/app-error.type.ts`: subclase del `AppError` del paquete que sobrescribe `prefixErrors()` y `exposeInternals()` como métodos (§2).
+- [ ] `LoggerService` bindeado en el contenedor: el servidor HTTP lo inyecta para loguear los errores (§5). No hay `onError` que enganchar.
 - [ ] `http-error.ts` y `fetcher.ts` en cada app cliente (§6).
 - [ ] Diccionario `código → texto`: sección `errors` en los locales, o constante `ERROR_MESSAGES` (§7).
 - [ ] `QueryClientProvider` (o el `resolveErrorMessage` equivalente) montado en el layout raíz, junto al `<Toaster />` (§8).
