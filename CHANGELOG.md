@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/jucodev/ai-ctx/compare/v1.1.1...v1.1.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* **guides:** align error handling with backend-core 2.0 ([402f03e](https://github.com/jucodev/ai-ctx/commit/402f03ee5418ade5a69f3cf7eca54ecb712a11d9))
+
 ## [1.1.1](https://github.com/jucodev/ai-ctx/compare/v1.1.0...v1.1.1) (2026-09-07)
 
 
