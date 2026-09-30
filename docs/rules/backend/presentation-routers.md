@@ -13,8 +13,8 @@ paths:
 - **Thin handlers** — routers handle HTTP transport only: parse input, call a service, return JSON
 - Input validation always uses `zValidator('query' | 'json' | 'form', SchemaName)` as inline middleware — never validate manually
 - Access validated data via `c.req.valid('...')` — never `c.req.query()`, `c.req.json()`, or `c.req.form()` directly
-- **Never throw `HTTPException`** — all errors must be `AppError` subclasses (domain errors from the module's `errors/` file). This includes authorization checks (403, 401): define an `AppError` subclass for them instead of using `HTTPException`
-- Domain errors (`AppError` subclasses) thrown by services propagate automatically to `onError` — do not catch them in handlers
+- **Never throw `HTTPException`** — all errors must be `AppError` subclasses (domain errors from the module's `errors/` file). The server does not recognise it and answers 500 whatever status it carried. This includes authorization checks (403, 401): define an `AppError` subclass for them instead of using `HTTPException`
+- Domain errors (`AppError` subclasses) thrown by services propagate automatically to the package's HTTP server, which logs and serializes them — do not catch them in handlers, and never register `app.onError` inside a router
 - New entity instances are constructed **in the router** using `new Entity({ ...data })` (the constructor autogenerates `id`/`createdAt`/`updatedAt`) then passed to the service
 - All list endpoints return `c.json({ results, total })`
 - All create endpoints return `c.json({ entity }, 201)`
